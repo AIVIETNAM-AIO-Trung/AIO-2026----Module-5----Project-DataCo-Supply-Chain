@@ -1,0 +1,7 @@
+.venv/
+.ipynb_checkpoints/
+.DS_Store
+__pycache__/
+
+# dataset gốc ~91.5MB, tải từ Kaggle (xem README)
+DataCoSupplyChainDataset.csv

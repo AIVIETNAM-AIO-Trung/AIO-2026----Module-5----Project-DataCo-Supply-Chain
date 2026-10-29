@@ -1,0 +1,36 @@
+﻿cot,ly_do
+Delivery Status,Leakage
+Days for shipping (real),Leakage
+shipping date (DateOrders),Leakage
+Order Status,Leakage
+Customer Email,Định danh / cá nhân
+Customer Password,Định danh / cá nhân
+Customer Fname,Định danh / cá nhân
+Customer Lname,Định danh / cá nhân
+Customer Street,Định danh / cá nhân
+Customer Zipcode,Định danh / cá nhân
+Customer Id,Định danh / cá nhân
+Order Customer Id,Định danh / cá nhân
+Order Id,Định danh / cá nhân
+Order Item Id,Định danh / cá nhân
+Product Image,Định danh / cá nhân
+Product Name,Định danh / cá nhân
+Product Card Id,Định danh / cá nhân
+Order Item Cardprod Id,Định danh / cá nhân
+Category Id,Định danh / cá nhân
+Product Category Id,Định danh / cá nhân
+Department Id,Định danh / cá nhân
+Product Description,Missing nhiều / 1 giá trị
+Order Zipcode,Missing nhiều / 1 giá trị
+Product Status,Missing nhiều / 1 giá trị
+Benefit per order,Trùng lặp
+Sales per customer,Trùng lặp
+Order Item Total,Trùng lặp
+Order Item Product Price,Trùng lặp
+Order Item Discount,Trùng lặp
+Customer City,Quá nhiều giá trị
+Customer State,Quá nhiều giá trị
+Order City,Quá nhiều giá trị
+Order State,Quá nhiều giá trị
+Order Country,Quá nhiều giá trị
+Customer Country,Quá nhiều giá trị
