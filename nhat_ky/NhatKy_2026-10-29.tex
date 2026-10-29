@@ -1,0 +1,189 @@
+% Nhật ký học tập ngày 29/10/2026 - DataCo Supply Chain
+% Biên dịch bằng XeLaTeX (hoặc tectonic):  xelatex NhatKy_2026-10-29.tex
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\setsansfont{Times New Roman}
+\setmonofont{Times New Roman}
+\usepackage[a4paper,margin=2.2cm]{geometry}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=black]{hyperref}
+
+\definecolor{notebg}{HTML}{F0F0F0}
+\titleformat{\section}{\Large\bfseries}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection}{0.5em}{}
+\setlist{itemsep=2pt,topsep=4pt}
+\setlength{\parskip}{4pt}
+\setlength{\parindent}{0pt}
+\renewcommand{\arraystretch}{1.25}
+\renewcommand{\tablename}{Bảng}
+\renewcommand{\contentsname}{Mục lục}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[L]{\small\color{gray}Nhật ký DataCo Supply Chain -- 29/10/2026}
+\fancyfoot[R]{\small\color{gray}Trang \thepage}
+\renewcommand{\headrulewidth}{0pt}
+
+\newcommand{\note}[1]{\par\noindent\colorbox{notebg}{\parbox{\dimexpr\linewidth-2\fboxsep}{#1}}\par}
+\newcommand{\col}[1]{\textsf{#1}}
+% thuật ngữ: tên in đậm + định nghĩa
+\newcommand{\term}[2]{\item \textbf{#1}: #2}
+
+\begin{document}
+
+\begin{center}
+{\LARGE\bfseries Nhật ký học tập -- Ngày 29/10/2026\par}
+\vspace{0.2cm}
+{\large DataCo Smart Supply Chain -- Dự đoán rủi ro giao hàng trễ\par}
+\vspace{0.2cm}
+{\small Submission 1\par}
+\end{center}
+\vspace{0.3cm}
+
+\tableofcontents
+
+% ======================================================
+\section{Hôm nay mình đã làm gì}
+\begin{enumerate}
+  \item Đọc file mô tả cột và dataset (180.519 dòng, 53 cột), cân nhắc nên làm \textbf{binary} hay \textbf{multiclass} classification.
+  \item Chọn target \col{Late\_delivery\_risk} (binary) sau khi so sánh với \col{Delivery Status} (4 lớp) và \col{Order Status} (9 lớp).
+  \item Lên danh sách các biểu đồ cần vẽ cho EDA, sau đó viết notebook và chạy toàn bộ.
+  \item Kiểm tra \textbf{data leakage}, phát hiện và loại 4 cột.
+  \item Tiền xử lý dữ liệu: bỏ các cột không dùng được, one-hot encoding.
+  \item Viết báo cáo, lúc đầu bằng Python (reportlab), sau đó viết lại bằng \textbf{LaTeX}.
+  \item Quyết định \textbf{tạm bỏ phần EDA theo thời gian} để nghiên cứu lại kỹ hơn, rồi chạy lại toàn bộ notebook và báo cáo.
+  \item Đưa code lên GitHub (dataset 91,5 MB không đưa lên, chỉ ghi link Kaggle trong README).
+\end{enumerate}
+
+% ======================================================
+\section{Các khái niệm học được}
+
+\subsection{Về bài toán}
+\begin{itemize}
+  \term{Binary classification}{phân loại 2 lớp (ví dụ: trễ / không trễ).}
+  \term{Multiclass classification}{phân loại từ 3 lớp trở lên (ví dụ: Delivery Status có 4 lớp: Advance, On time, Late, Canceled).}
+  \term{Target (biến mục tiêu)}{cột mà mô hình cần dự đoán. Nên chọn target có ý nghĩa nghiệp vụ, phân bố hợp lý và biết được \emph{sau} thời điểm dự đoán.}
+  \term{Class imbalance (mất cân bằng lớp)}{một lớp chiếm tỉ lệ rất nhỏ (ví dụ SUSPECTED\_FRAUD chỉ 2,25\%). Khi đó accuracy dễ gây hiểu lầm, nên dùng thêm F1 macro, PR-AUC và có thể cần class weight hoặc SMOTE.}
+  \term{Granularity (đơn vị của một dòng)}{trong dataset này mỗi dòng là một \emph{item} trong đơn hàng, không phải một đơn. 65.752 đơn hàng tương ứng với 180.519 dòng.}
+\end{itemize}
+
+\subsection{Data leakage (rò rỉ dữ liệu)}
+\begin{itemize}
+  \term{Định nghĩa}{feature chứa thông tin mà tại thời điểm dự đoán (lúc đặt hàng) mình chưa thể biết. Mô hình dùng các feature này sẽ có kết quả rất cao nhưng vô dụng khi áp dụng thực tế.}
+  \term{Cách phát hiện}{(1) tự hỏi ``lúc đặt hàng mình đã biết giá trị này chưa?''; (2) crosstab feature với target, nếu trùng gần 100\% thì rất đáng nghi; (3) huấn luyện thử có và không có feature đó, nếu accuracy tăng vọt thì đó là leakage.}
+  \term{Leakage gián tiếp}{feature không trực tiếp là kết quả nhưng mang thông tin của kết quả. Ví dụ \col{Type = TRANSFER} chứa toàn bộ đơn bị hủy (luôn có nhãn ``không trễ'').}
+\end{itemize}
+
+\subsection{Tiền xử lý}
+\begin{itemize}
+  \term{One-hot encoding}{biến cột chữ thành nhiều cột 0/1. Tham số \col{drop\_first=True} bỏ 1 cột để tránh dư thừa thông tin.}
+  \term{High cardinality}{cột có quá nhiều giá trị khác nhau (ví dụ Order City có 3.597 giá trị). Nếu one-hot sẽ tạo ra quá nhiều cột; có thể dùng target encoding hoặc frequency encoding thay thế.}
+  \term{Cột trùng lặp / đa cộng tuyến}{hai cột giống hệt nhau hoặc tương quan rất cao thì chỉ cần giữ một cột. Ví dụ Shipping Mode và số ngày giao dự kiến luôn đi cùng nhau.}
+  \term{Stratified split}{chia train/test sao cho tỉ lệ các lớp ở hai tập giống nhau (\col{stratify=y}).}
+  \term{StandardScaler}{chuẩn hóa về trung bình 0, độ lệch chuẩn 1. Chỉ \textbf{fit trên tập train} rồi transform tập test, để tránh rò rỉ thông tin từ tập test.}
+\end{itemize}
+
+\subsection{Đánh giá mô hình}
+\begin{itemize}
+  \term{Dummy baseline}{mô hình ``ngốc'' luôn đoán lớp nhiều nhất, dùng làm mốc tối thiểu. Mô hình thật phải vượt được mốc này.}
+  \term{Confusion matrix}{bảng TP, FP, TN, FN.}
+  \term{Accuracy}{$\frac{TP+TN}{\text{tổng}}$, tỉ lệ đoán đúng.}
+  \term{Precision}{$\frac{TP}{TP+FP}$: trong các đơn mô hình báo trễ, bao nhiêu đơn thật sự trễ.}
+  \term{Recall}{$\frac{TP}{TP+FN}$: trong các đơn thật sự trễ, mô hình bắt được bao nhiêu.}
+  \term{F1}{trung bình điều hòa của Precision và Recall.}
+  \term{F1 macro}{trung bình F1 của các lớp. Không bị ``đánh lừa'' bởi mô hình chỉ đoán một lớp.}
+  \term{ROC-AUC}{khả năng \emph{xếp hạng} đơn trễ cao hơn đơn không trễ, không phụ thuộc ngưỡng. 0,5 tương đương đoán ngẫu nhiên, 1 là hoàn hảo.}
+  \term{Threshold (ngưỡng)}{mặc định đoán ``trễ'' khi xác suất $\geq$ 0,5. Hạ ngưỡng thì recall tăng nhưng precision giảm.}
+  \term{Feature importance}{mức độ đóng góp của từng feature trong mô hình cây.}
+\end{itemize}
+
+\subsection{Mô hình \& huấn luyện}
+\begin{itemize}
+  \term{Regularization (tham số C trong Logistic Regression)}{C nhỏ nghĩa là phạt mạnh, mô hình đơn giản hơn. Có ích khi bị overfit.}
+  \term{class\_weight='balanced'}{tăng trọng số cho lớp ít mẫu. Chỉ có ích khi dữ liệu mất cân bằng thật sự.}
+  \term{Cross-validation (k-fold)}{chia train thành k phần rồi lần lượt dùng từng phần làm validation, cho kết quả ổn định hơn một lần chia duy nhất.}
+  \term{Underfitting / Overfitting}{underfit là mô hình quá đơn giản, kém trên cả train lẫn test; overfit là học thuộc tập train nên kém trên tập test.}
+  \term{Mô hình tuyến tính và mô hình cây}{Logistic Regression chỉ học được quan hệ tuyến tính; mô hình cây học được dạng ``bậc thang'' và tương tác giữa các feature.}
+\end{itemize}
+
+\subsection{Trực quan hóa}
+\begin{itemize}
+  \term{Tỉ lệ trễ theo nhóm + đường trung bình}{với biến phân loại, nên vẽ \% trễ của từng nhóm thay vì số lượng, kèm đường trung bình để dễ so sánh.}
+  \term{KDE / Boxplot theo target}{so sánh phân phối của biến số giữa 2 nhóm. Nếu hai đường gần như trùng nhau thì biến đó ít có ích.}
+  \term{Heatmap tương quan}{phát hiện các cột trùng lặp và mức tương quan với target.}
+\end{itemize}
+
+% ======================================================
+\section{Findings đầu tiên về dataset}
+
+\subsection{Cấu trúc dữ liệu}
+\begin{itemize}
+  \item 180.519 dòng $\times$ 53 cột; 65.752 đơn hàng; thời gian đặt hàng từ 01/2015 đến 01/2018. Không có dòng trùng lặp.
+  \item File phải đọc bằng \col{encoding='latin-1'} (đọc utf-8 bị lỗi).
+  \item \col{Product Description} thiếu 100\%, \col{Order Zipcode} thiếu 86,2\%. \col{Customer Email}, \col{Customer Password} đều là ``XXXXXXXXX''; \col{Product Status} luôn bằng 0.
+  \item 6 cặp cột giống hệt nhau, ví dụ \col{Benefit per order} = \col{Order Profit Per Order}, \col{Sales per customer} = \col{Order Item Total}.
+  \item Khách hàng và cửa hàng chỉ ở Mỹ và Puerto Rico, nhưng nơi giao hàng trải rộng 164 quốc gia.
+\end{itemize}
+
+\subsection{Target và leakage}
+\begin{itemize}
+  \item \col{Late\_delivery\_risk}: 54,8\% trễ / 45,2\% không trễ, khá cân bằng.
+  \item \col{Late\_delivery\_risk} = 1 $\Leftrightarrow$ \col{Delivery Status} = ``Late delivery'' (trùng 100\%).
+  \item Luật \col{real days} $>$ \col{scheduled days} khớp 97,55\% với target. Các dòng không khớp đều là đơn bị hủy.
+  \item CANCELED + SUSPECTED\_FRAUD = đúng 7.754 dòng ``Shipping canceled''.
+\end{itemize}
+
+\subsection{Yếu tố ảnh hưởng}
+\begin{table}[H]\centering
+\caption{Tỉ lệ trễ theo Shipping Mode, yếu tố mạnh nhất}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Shipping Mode} & \textbf{Số ngày dự kiến} & \textbf{Số dòng} & \textbf{Tỉ lệ trễ} \\ \midrule
+First Class & 1 & 27.814 & 95,32\% \\
+Second Class & 2 & 35.216 & 76,63\% \\
+Same Day & 0 & 9.737 & 45,74\% \\
+Standard Class & 4 & 107.752 & 38,07\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+\begin{itemize}
+  \item Mỗi Shipping Mode gắn với đúng một số ngày dự kiến, nên hai cột mang cùng một thông tin.
+  \item Địa lý (Market 54,4--55,2\%; Region 48,8--58,0\%), Department, Category, Customer Segment và các biến tiền/giá/số lượng đều ảnh hưởng yếu. Tương quan của các biến số với target đều có $|r| < 0{,}004$.
+  \item \col{Type = TRANSFER} trễ ít hơn (48,5\% so với 56,6--57,5\%) vì chứa toàn bộ đơn bị hủy, không phải do vận chuyển.
+\end{itemize}
+
+\subsection{Quan sát về thời gian (chưa đưa vào báo cáo, cần nghiên cứu lại)}
+\begin{itemize}
+  \item Từ 10/2017 số dòng mỗi tháng giảm từ khoảng 5.200 xuống khoảng 2.100, nhưng tỉ lệ trễ không đổi. Cần tìm hiểu vì sao.
+  \item Tỉ lệ trễ theo tháng khoảng 52--57\%; theo thứ trong tuần 54,3--55,2\%, gần như không khác biệt.
+  \item \textbf{Giờ đặt hàng có quy luật rõ}: đặt từ 0h đến 11h trễ khoảng 51--53\%, từ 12h đến 23h trễ khoảng 55--59,5\%. Vì sao lại có bước nhảy đúng lúc 12h?
+\end{itemize}
+
+% ======================================================
+\section{Câu hỏi còn bỏ ngỏ \& việc cần làm tiếp}
+\begin{itemize}
+  \item[$\square$] Nghiên cứu lại yếu tố thời gian: vì sao giờ đặt hàng sau 12h trễ nhiều hơn? Vì sao từ 10/2017 dữ liệu giảm một nửa?
+  \item[$\square$] Có nên bỏ hẳn các đơn bị hủy (Shipping canceled) khỏi dữ liệu train, vì đây không phải trường hợp ``giao đúng hạn''?
+  \item[$\square$] Lưu ý khi làm mô hình: các item cùng một đơn hàng (\col{Order Id}) không nên nằm ở cả train và test.
+  \item[$\square$] Thử target encoding cho \col{Order Country}, \col{Order City}.
+  \item[$\square$] Mở rộng sang multiclass với \col{Delivery Status}.
+\end{itemize}
+
+\section{Tự nhận xét}
+Bài học lớn nhất hôm nay là \textbf{kiểm tra leakage trước khi làm mô hình}: chỉ một luật đơn giản
+``số ngày giao thực tế $>$ số ngày dự kiến'' đã khớp 97,55\% với target, nên các cột biết được sau khi giao hàng
+phải được loại bỏ ngay từ đầu. Ngoài ra, EDA cho thấy phương thức vận chuyển gần như quyết định việc trễ, còn
+phần lớn các yếu tố khác ảnh hưởng rất yếu. Phần xây dựng mô hình vẫn đang thử nghiệm, chưa chốt.
+
+\end{document}
