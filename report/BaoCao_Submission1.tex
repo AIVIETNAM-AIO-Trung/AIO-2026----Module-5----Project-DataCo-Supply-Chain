@@ -1,0 +1,328 @@
+% Báo cáo Submission 1 - DataCo Supply Chain
+% Biên dịch bằng XeLaTeX (hoặc tectonic):  xelatex BaoCao_Submission1.tex
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\setsansfont{Times New Roman}
+\setmonofont{Times New Roman}
+\usepackage[a4paper,margin=2.2cm]{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{xcolor}
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage[colorlinks=true,linkcolor=accent,urlcolor=accent]{hyperref}
+
+\definecolor{accent}{HTML}{000000}
+\definecolor{notebg}{HTML}{F0F0F0}
+\graphicspath{{../figures/}}
+
+\titleformat{\section}{\Large\bfseries\sffamily\color{accent}}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\large\bfseries\sffamily\color{accent}}{\thesubsection}{0.5em}{}
+\setlist{itemsep=2pt,topsep=4pt}
+\setlength{\parskip}{4pt}
+\setlength{\parindent}{0pt}
+\renewcommand{\arraystretch}{1.25}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[L]{\small\color{gray}DataCo Supply Chain -- Báo cáo Submission 1}
+\fancyfoot[R]{\small\color{gray}Trang \thepage}
+\renewcommand{\headrulewidth}{0pt}
+
+\renewcommand{\figurename}{Hình}
+\renewcommand{\tablename}{Bảng}
+\renewcommand{\contentsname}{Mục lục}
+
+% hình kèm đường dẫn file minh chứng
+\newcommand{\fig}[3]{%
+  \begin{figure}[H]\centering
+  \includegraphics[width=#2\linewidth]{#1}
+  \caption{#3 \textit{(nguồn: \texttt{\detokenize{figures/#1}})}}
+  \end{figure}}
+\newcommand{\note}[1]{\par\noindent\colorbox{notebg}{\parbox{\dimexpr\linewidth-2\fboxsep}{#1}}\par}
+\newcommand{\col}[1]{\textsf{#1}}
+
+\begin{document}
+
+% ================= TRANG BÌA =================
+\hypersetup{pageanchor=false}
+\begin{titlepage}
+\centering
+\vspace*{\fill}
+{\Huge\bfseries DataCo Smart Supply Chain --\\[0.4cm] Dự đoán rủi ro giao hàng trễ\par}
+\vspace*{\fill}
+\end{titlepage}
+\hypersetup{pageanchor=true}
+
+\tableofcontents
+\newpage
+
+% ================= 1 =================
+\section{Giới thiệu bài toán và dữ liệu}
+Bộ dữ liệu \textbf{DataCo Smart Supply Chain} ghi lại các giao dịch bán hàng của công ty DataCo Global trong giai đoạn
+\textbf{01/2015 -- 01/2018}. Mỗi dòng là một \textbf{sản phẩm (item) trong một đơn hàng}, kèm thông tin khách hàng,
+sản phẩm, thị trường, phương thức vận chuyển và kết quả giao hàng.
+
+\textbf{Mục tiêu:} xây dựng mô hình dự đoán \textbf{đơn hàng có bị giao trễ hay không} ngay tại thời điểm đặt hàng,
+để doanh nghiệp có thể chủ động đổi phương thức vận chuyển hoặc thông báo trước cho khách hàng.
+
+\begin{table}[H]\centering
+\caption{Thông tin tổng quan bộ dữ liệu}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+\textbf{Thông tin} & \textbf{Giá trị} \\ \midrule
+File dữ liệu & \col{DataCoSupplyChainDataset.csv} (\textasciitilde 91,5 MB, encoding latin-1) \\
+File mô tả cột & \col{DescriptionDataCoSupplyChain.csv} \\
+Số dòng & 180.519 (mỗi dòng là 1 order item, \col{Order Item Id} duy nhất) \\
+Số đơn hàng khác nhau (\col{Order Id}) & 65.752 \\
+Số cột & 53 (24 object, 15 float64, 14 int64) \\
+Thời gian đặt hàng & 01/01/2015 -- 31/01/2018 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ================= 2 =================
+\section{Lựa chọn hướng tiếp cận: Binary hay Multiclass}
+Dựa vào file mô tả, có 3 cột có thể dùng làm biến mục tiêu:
+
+\begin{table}[H]\centering
+\caption{So sánh các lựa chọn biến mục tiêu}
+\small
+\begin{tabularx}{\linewidth}{@{}l l X X@{}}
+\toprule
+\textbf{Cột} & \textbf{Loại} & \textbf{Phân bố} & \textbf{Đánh giá} \\ \midrule
+\col{Late\_delivery\_risk} & Binary (2 lớp) & 1 (trễ): 98.977 (54,8\%) \newline 0 (không trễ): 81.542 (45,2\%) & \textbf{Chọn.} Cân bằng, ý nghĩa nghiệp vụ rõ ràng. \\
+\col{Delivery Status} & Multiclass (4 lớp) & Late 54,8\% · Advance 23,0\% · On time 17,8\% · Canceled 4,3\% & Hướng mở rộng; lớp Canceled ít, cần xử lý mất cân bằng. \\
+\col{Order Status} & Multiclass (9 lớp) & COMPLETE 33,0\% \ldots{} PAYMENT\_REVIEW 1,0\% & Không chọn. Là trạng thái xử lý đơn, không phải kết quả giao hàng. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\fig{fig02_target.png}{0.95}{Phân bố của \col{Late\_delivery\_risk} (trái) và \col{Delivery Status} (phải).}
+
+\textbf{Kết luận:} bài toán được xây dựng theo hướng \textbf{Binary Classification} với target
+\col{Late\_delivery\_risk}. Phân tích ở mục~\ref{sec:leak} cho thấy \col{Late\_delivery\_risk} = 1 trùng 100\% với
+\col{Delivery Status} = ``Late delivery'', tức nhãn binary là phiên bản gộp của nhãn 4 lớp (Late so với 3 lớp còn lại).
+
+% ================= 3 =================
+\section{Tổng quan và chất lượng dữ liệu}
+\subsection{Giá trị thiếu}
+\fig{fig01_missing.png}{0.75}{Tỉ lệ giá trị thiếu theo cột.}
+\begin{itemize}
+  \item \col{Product Description}: thiếu 100\% $\rightarrow$ bỏ.
+  \item \col{Order Zipcode}: thiếu 86,24\% (155.679 dòng) $\rightarrow$ bỏ.
+  \item \col{Customer Lname} (8 dòng) và \col{Customer Zipcode} (3 dòng): thiếu rất ít và cũng bị loại ở bước tiền xử lý (cột định danh) nên không cần xử lý.
+\end{itemize}
+
+\subsection{Trùng lặp và các cột không có thông tin}
+\begin{itemize}
+  \item Không có dòng trùng lặp (0 dòng).
+  \item \col{Customer Email}, \col{Customer Password} chỉ có 1 giá trị ``XXXXXXXXX'' (đã bị che); \col{Product Status} chỉ có giá trị 0.
+  \item Nhiều cặp cột \textbf{giống hệt nhau} (đã kiểm tra bằng code, kết quả đều \texttt{True}):
+    \col{Benefit per order} = \col{Order Profit Per Order};
+    \col{Sales per customer} = \col{Order Item Total};
+    \col{Product Price} = \col{Order Item Product Price};
+    \col{Order Customer Id} = \col{Customer Id};
+    \col{Category Id} = \col{Product Category Id};
+    \col{Product Card Id} = \col{Order Item Cardprod Id}.
+  \item \col{Customer Country} chỉ có 2 giá trị (EE.\,UU. và Puerto Rico): khách hàng và cửa hàng đều ở Mỹ, còn nơi giao hàng (\col{Order Country}) trải rộng 164 quốc gia.
+\end{itemize}
+
+% ================= 4 =================
+\section{Phân tích rò rỉ dữ liệu (data leakage)}\label{sec:leak}
+Rò rỉ dữ liệu xảy ra khi một feature chứa thông tin chỉ biết được \textbf{sau khi} việc giao hàng đã diễn ra.
+Nếu dùng các cột này, mô hình sẽ có độ chính xác rất cao nhưng không dùng được trong thực tế.
+
+\fig{fig03_leak_delivery_status.png}{0.55}{\col{Delivery Status} so với \col{Late\_delivery\_risk}: trùng khớp hoàn toàn.}
+\fig{fig04_leak_real_vs_scheduled.png}{0.65}{Tỉ lệ trễ theo số ngày giao thực tế (dòng) và số ngày giao dự kiến (cột).}
+
+\begin{itemize}
+  \item \col{Delivery Status} = ``Late delivery'' $\Leftrightarrow$ \col{Late\_delivery\_risk} = 1 (98.977 dòng), các trạng thái còn lại đều = 0.
+  \item Chỉ cần luật \col{Days for shipping (real)} $>$ \col{Days for shipment (scheduled)} đã đúng \textbf{97,55\%} (176.096 trên 180.519 dòng). 4.423 dòng không khớp đều thuộc nhóm ``Shipping canceled''.
+  \item \col{Order Status}: CANCELED (3.692) + SUSPECTED\_FRAUD (4.062) = đúng 7.754 dòng ``Shipping canceled'', là thông tin sau xử lý đơn.
+  \item \col{shipping date (DateOrders)}: ngày giao thực tế, suy ra trực tiếp số ngày giao thực tế.
+\end{itemize}
+
+\note{$\Rightarrow$ Loại bỏ 4 cột leakage: \col{Delivery Status}, \col{Days for shipping (real)},
+\col{shipping date (DateOrders)}, \col{Order Status}. Minh chứng: notebook mục 4.}
+
+% ================= 5 =================
+\section{Phân tích khám phá dữ liệu (EDA)}
+Với các biến phân loại, báo cáo dùng \textbf{tỉ lệ đơn trễ (\%)} của từng nhóm và so sánh với tỉ lệ trễ trung bình
+của toàn bộ dữ liệu là \textbf{54,83\%} (đường nét đứt màu đỏ trên biểu đồ).
+
+\note{\textit{Ghi chú:} phần EDA theo thời gian (ngày/giờ đặt hàng) tạm thời chưa đưa vào báo cáo này, sẽ được nghiên cứu và bổ sung ở lần nộp sau.}
+
+\subsection{Yếu tố vận chuyển}
+\fig{fig05_late_by_shipping_mode.png}{0.7}{Tỉ lệ giao trễ theo \col{Shipping Mode}.}
+
+\begin{table}[H]\centering
+\caption{Tỉ lệ trễ theo phương thức vận chuyển}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Shipping Mode} & \textbf{Số ngày dự kiến} & \textbf{Số dòng} & \textbf{Tỉ lệ trễ} \\ \midrule
+First Class & 1 & 27.814 & 95,32\% \\
+Second Class & 2 & 35.216 & 76,63\% \\
+Same Day & 0 & 9.737 & 45,74\% \\
+Standard Class & 4 & 107.752 & 38,07\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\fig{fig07_shipping_mode_vs_scheduled.png}{0.55}{Mỗi \col{Shipping Mode} ứng với đúng một giá trị \col{Days for shipment (scheduled)}.}
+
+\begin{itemize}
+  \item \col{Shipping Mode} là yếu tố phân biệt mạnh nhất: First Class trễ tới 95,3\% trong khi Standard Class chỉ 38,1\%.
+  \item Mỗi Shipping Mode gắn với đúng 1 giá trị số ngày dự kiến (First = 1, Second = 2, Same Day = 0, Standard = 4), nên hai cột mang cùng một thông tin. Vì vậy biểu đồ tỉ lệ trễ theo số ngày dự kiến (file \col{fig06} trong thư mục \col{figures/}) giống hệt biểu đồ Shipping Mode ở trên.
+  \item Diễn giải: các lựa chọn giao nhanh có lịch hẹn quá gấp so với khả năng thực tế nên rất hay bị trễ.
+\end{itemize}
+
+\subsection{Yếu tố địa lý}
+\fig{fig08_late_by_market.png}{0.65}{Tỉ lệ giao trễ theo \col{Market}.}
+\fig{fig09_late_by_region.png}{0.7}{Tỉ lệ giao trễ theo \col{Order Region} (23 vùng).}
+\fig{fig10_store_location.png}{0.7}{Vị trí cửa hàng (Latitude/Longitude), mẫu 20.000 dòng, tô màu theo target.}
+\begin{itemize}
+  \item Market: tỉ lệ trễ chỉ từ 54,4\% (LATAM) đến 55,2\% (Europe), gần như không khác biệt.
+  \item Order Region: từ 48,8\% (Canada, chỉ 959 dòng) đến 58,0\% (Central Africa, 1.677 dòng); phần lớn các vùng nằm trong khoảng 53--56\%.
+  \item Cửa hàng đều ở Mỹ/Puerto Rico, các điểm trễ và không trễ trộn lẫn nhau, nên vị trí cửa hàng không phân biệt rõ.
+  \item $\Rightarrow$ Yếu tố địa lý ảnh hưởng \textbf{yếu}.
+\end{itemize}
+
+\subsection{Sản phẩm và khách hàng}
+\fig{fig11_late_by_product.png}{1.0}{Tỉ lệ giao trễ theo Department và 15 Category nhiều đơn nhất.}
+\fig{fig12_late_by_customer_type.png}{0.95}{Tỉ lệ giao trễ theo Customer Segment và Type (hình thức thanh toán).}
+\begin{itemize}
+  \item Department và Category: hầu hết nằm trong khoảng 54--57\%. Pet Shop cao nhất (58,9\%) nhưng chỉ có 492 dòng.
+  \item Customer Segment: Consumer 54,8\%, Corporate 54,7\%, Home Office 55,1\%, nên không khác biệt.
+  \item Type: TRANSFER thấp hơn rõ rệt (48,5\%) so với CASH/DEBIT/PAYMENT (56,6--57,5\%). Nguyên nhân là toàn bộ đơn CANCELED và SUSPECTED\_FRAUD (luôn có nhãn ``không trễ'') đều có Type = TRANSFER (đã kiểm tra bằng crosstab Type $\times$ Order Status trong notebook). Type vẫn được giữ vì biết được ngay lúc đặt hàng, nhưng cần lưu ý đây là tín hiệu gián tiếp.
+\end{itemize}
+
+\subsection{Biến số và tương quan}
+\fig{fig13_numeric_kde.png}{1.0}{Phân phối (KDE) các biến số theo target.}
+\fig{fig14_numeric_boxplot.png}{1.0}{Boxplot các biến số theo target.}
+
+\begin{table}[H]\centering
+\caption{Giá trị trung bình của các biến số theo nhóm}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Biến} & \textbf{TB nhóm không trễ} & \textbf{TB nhóm trễ} \\ \midrule
+Sales & 204,29 & 203,34 \\
+Order Item Quantity & 2,128 & 2,127 \\
+Product Price & 141,57 & 140,96 \\
+Order Item Discount Rate & 0,1016 & 0,1017 \\
+Order Item Profit Ratio & 0,1218 & 0,1197 \\
+Order Profit Per Order & 22,40 & 21,62 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\fig{fig15_correlation.png}{0.85}{Ma trận tương quan giữa các biến số.}
+\begin{itemize}
+  \item Phân phối các biến tiền, giá và số lượng gần như trùng nhau giữa hai nhóm, nên các biến này ảnh hưởng rất yếu đến việc trễ.
+  \item \col{Order Profit Per Order} có outlier âm lớn (min = $-4.274{,}98$), cần lưu ý khi dùng mô hình tuyến tính.
+  \item Tương quan với target: \col{Days for shipping (real)} = $+0{,}40$ (leakage), \col{Days for shipment (scheduled)} = $-0{,}37$; tất cả các biến số khác có $|r| < 0{,}004$.
+  \item Nhóm Sales / Order Item Total / Sales per customer tương quan rất cao với nhau $\rightarrow$ chỉ giữ Sales.
+\end{itemize}
+
+\note{\textbf{Tóm tắt EDA:} yếu tố quyết định chính là \textbf{phương thức vận chuyển} (Shipping Mode / số ngày dự kiến).
+Các yếu tố địa lý, sản phẩm, khách hàng và giá trị đơn hàng chỉ ảnh hưởng yếu.}
+
+% ================= 6 =================
+\section{Tiền xử lý dữ liệu}
+Từ 53 cột ban đầu, loại bỏ \textbf{35 cột} theo các nhóm lý do sau (nguồn: \col{results/cac\_cot\_bi\_bo.csv}):
+
+\begin{table}[H]\centering
+\caption{Các cột bị loại bỏ}
+\small
+\begin{tabularx}{\linewidth}{@{}p{3.6cm}cX@{}}
+\toprule
+\textbf{Lý do} & \textbf{Số cột} & \textbf{Các cột} \\ \midrule
+Leakage & 4 & Delivery Status, Days for shipping (real), shipping date (DateOrders), Order Status \\
+Định danh / cá nhân & 17 & Customer Email, Customer Password, Customer Fname, Customer Lname, Customer Street, Customer Zipcode, Customer Id, Order Customer Id, Order Id, Order Item Id, Product Image, Product Name, Product Card Id, Order Item Cardprod Id, Category Id, Product Category Id, Department Id \\
+Missing nhiều / 1 giá trị & 3 & Product Description, Order Zipcode, Product Status \\
+Trùng lặp & 5 & Benefit per order, Sales per customer, Order Item Total, Order Item Product Price, Order Item Discount \\
+Quá nhiều giá trị & 6 & Customer City, Customer State, Order City, Order State, Order Country, Customer Country \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\textbf{Các cột còn lại (17 cột + target):} Type, Days for shipment (scheduled), Category Name, Customer Segment,
+Department Name, Latitude, Longitude, Market, order date (DateOrders), Order Item Discount Rate, Order Item Profit Ratio, Order Item Quantity,
+Sales, Order Profit Per Order, Order Region, Product Price, Shipping Mode.
+
+\textbf{Mã hóa:} One-hot encoding (\texttt{drop\_first=True}) cho 7 cột chữ (Type 4, Category Name 50, Customer Segment 3,
+Department Name 11, Market 5, Order Region 23, Shipping Mode 4 giá trị); cột \col{order date (DateOrders)} được giữ nguyên dạng ngày tháng. Kết quả: bảng dữ liệu \textbf{180.519 dòng $\times$ 104 cột}. Không còn giá trị thiếu.
+
+% ================= 7 =================
+\section{Kết luận, hạn chế và hướng phát triển}
+\subsection*{Kết luận Submission 1}
+\begin{itemize}
+  \item Xác định bài toán là \textbf{Binary Classification} với target \col{Late\_delivery\_risk} (54,8\% / 45,2\%, khá cân bằng).
+  \item Phát hiện và loại bỏ \textbf{4 cột leakage}; chỉ riêng luật ``số ngày giao thực tế $>$ số ngày dự kiến'' đã khớp 97,55\% với target.
+  \item EDA cho thấy \textbf{Shipping Mode / số ngày giao dự kiến} là yếu tố quan trọng nhất; các yếu tố địa lý, sản phẩm, khách hàng và giá trị đơn hàng ảnh hưởng yếu.
+  \item Tiền xử lý: loại 35 cột, one-hot encoding cho 7 cột chữ, dữ liệu không còn giá trị thiếu.
+\end{itemize}
+
+\subsection*{Hạn chế}
+\begin{itemize}
+  \item Chưa phân tích yếu tố thời gian (ngày/giờ đặt hàng).
+  \item Tạm bỏ các cột nhiều giá trị (Order Country, Order City, Order State), có thể làm mất thông tin.
+\end{itemize}
+
+\subsection*{Hướng phát triển}
+\begin{itemize}
+  \item Nghiên cứu EDA theo thời gian (ngày/giờ đặt hàng).
+  \item Target encoding hoặc frequency encoding cho Order Country, Order City.
+  \item Xây dựng mô hình (đang thử nghiệm, chưa chốt).
+  \item Mở rộng sang Multiclass với \col{Delivery Status} (4 lớp).
+\end{itemize}
+
+% ================= PHỤ LỤC =================
+\newpage
+\appendix
+\section*{Phụ lục: Danh sách file minh chứng}
+\addcontentsline{toc}{section}{Phụ lục: Danh sách file minh chứng}
+Tất cả nội dung trong báo cáo đều có thể kiểm tra lại từ các file sau (đường dẫn tính từ thư mục gốc của project):
+
+\small
+\begin{longtable}{@{}p{7.6cm}p{5.6cm}l@{}}
+\toprule
+\textbf{File} & \textbf{Nội dung} & \textbf{Mục} \\ \midrule
+\endhead
+\col{DataCo\_Submission1.ipynb} & Notebook đầy đủ code và output & Tất cả \\
+\col{DataCo\_Submission1.html} & Bản HTML của notebook & Tất cả \\
+\col{report/BaoCao\_Submission1.tex} & Mã nguồn LaTeX của báo cáo này & -- \\
+\col{results/cac\_cot\_bi\_bo.csv} & Danh sách 35 cột bị loại kèm lý do & 6 \\
+\col{figures/fig01\_missing.png} & Giá trị thiếu & 3.1 \\
+\col{figures/fig02\_target.png} & Phân bố target & 2 \\
+\col{figures/fig03\_leak\_delivery\_status.png} & Leakage: Delivery Status & 4 \\
+\col{figures/fig04\_leak\_real\_vs\_scheduled.png} & Leakage: ngày thực tế / dự kiến & 4 \\
+\col{figures/fig05\_late\_by\_shipping\_mode.png} & Trễ theo Shipping Mode & 5.1 \\
+\col{figures/fig06\_late\_by\_scheduled\_days.png} & Trễ theo số ngày dự kiến & 5.1 \\
+\col{figures/fig07\_shipping\_mode\_vs\_scheduled.png} & Shipping Mode $\times$ số ngày dự kiến & 5.1 \\
+\col{figures/fig08\_late\_by\_market.png} & Trễ theo Market & 5.2 \\
+\col{figures/fig09\_late\_by\_region.png} & Trễ theo Order Region & 5.2 \\
+\col{figures/fig10\_store\_location.png} & Vị trí cửa hàng & 5.2 \\
+\col{figures/fig11\_late\_by\_product.png} & Department / Category & 5.3 \\
+\col{figures/fig12\_late\_by\_customer\_type.png} & Segment / Type & 5.3 \\
+\col{figures/fig13\_numeric\_kde.png} & KDE biến số & 5.4 \\
+\col{figures/fig14\_numeric\_boxplot.png} & Boxplot biến số & 5.4 \\
+\col{figures/fig15\_correlation.png} & Ma trận tương quan & 5.4 \\
+\bottomrule
+\end{longtable}
+\normalsize
+
+{\sloppy\textbf{Cách chạy lại:} mở \col{DataCo\_Submission1.ipynb} bằng Jupyter (Python có pandas, matplotlib, seaborn),
+đặt file \col{DataCoSupplyChainDataset.csv} cùng thư mục rồi chọn \textit{Run All} (khoảng 1 phút). Thư mục
+\col{figures/} và \col{results/} sẽ được tạo tự động. Biên dịch báo cáo: vào thư mục \col{report/} và chạy
+lệnh \col{xelatex BaoCao\_Submission1.tex} (hoặc \col{tectonic BaoCao\_Submission1.tex}).\par}
+
+\end{document}
