@@ -1,0 +1,4 @@
+﻿cach_lam,accuracy,precision,recall,f1
+Luôn đoán trễ,0.5731,0.5731,1.0,0.7287
+Baseline 1: Shipping Mode,0.6984,0.8885,0.5417,0.6731
+Baseline 2: Shipping Mode + quy tắc 12h,0.7242,0.8962,0.5868,0.7092

@@ -1,0 +1,6 @@
+﻿random_state,Baseline 2,Logistic Regression,Logistic Regression + tương tác,Decision Tree (max_depth=6)
+0,0.7178,0.7115,0.7178,0.7167
+1,0.725,0.7196,0.725,0.7251
+2,0.724,0.714,0.724,0.7229
+3,0.721,0.7119,0.721,0.7199
+42,0.7242,0.7177,0.7242,0.7238
