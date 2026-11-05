@@ -1,0 +1,103 @@
+% Nhật ký học tập ngày 05/11/2026 - DataCo Supply Chain
+% Biên dịch bằng XeLaTeX (hoặc tectonic):  xelatex NhatKy_2026-11-05.tex
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\setsansfont{Times New Roman}
+\setmonofont{Times New Roman}
+\usepackage[a4paper,margin=2.2cm]{geometry}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=black]{hyperref}
+
+\definecolor{notebg}{HTML}{F0F0F0}
+\titleformat{\section}{\Large\bfseries}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection}{0.5em}{}
+\setlist{itemsep=2pt,topsep=4pt}
+\setlength{\parskip}{4pt}
+\setlength{\parindent}{0pt}
+\renewcommand{\arraystretch}{1.25}
+\renewcommand{\tablename}{Bảng}
+\renewcommand{\contentsname}{Mục lục}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[L]{\small\color{gray}Nhật ký DataCo Supply Chain -- 05/11/2026}
+\fancyfoot[R]{\small\color{gray}Trang \thepage}
+\renewcommand{\headrulewidth}{0pt}
+
+\newcommand{\note}[1]{\par\noindent\colorbox{notebg}{\parbox{\dimexpr\linewidth-2\fboxsep}{#1}}\par}
+\newcommand{\col}[1]{\textsf{#1}}
+\newcommand{\term}[2]{\item \textbf{#1}: #2}
+
+\begin{document}
+
+\begin{center}
+{\LARGE\bfseries Nhật ký học tập -- Cập nhật đến 05/11/2026\par}
+\vspace{0.2cm}
+{\large DataCo Smart Supply Chain -- Dự đoán rủi ro giao hàng trễ\par}
+\vspace{0.2cm}
+{\small Submission 2\par}
+\end{center}
+\vspace{0.3cm}
+
+% ======================================================
+\section{Các việc cần làm}
+\begin{enumerate}
+  \item Lên kế hoạch xử lý 5 nhận xét của mentor và kiểm tra các số kỳ vọng trên dữ liệu thật.
+  \item Tạo notebook Submission 2 riêng để giữ nguyên minh chứng của Submission 1.
+  \item Tự viết code kiểm tra mỗi đơn có đúng 1 nhãn và 1 trạng thái.
+  \item Bỏ đơn hủy, chạy lại EDA, sửa các nhận xét đã cũ.
+  \item Làm EDA theo thời gian ở mức đơn.
+  \item Chia train/test ở mức đơn, đặt 3 mốc so sánh.
+  \item Train 3 mô hình đơn giản và so sánh trên 5 cách chia.
+  \item Viết báo cáo, cập nhật README và nhật ký.
+\end{enumerate}
+
+% ======================================================
+\section{Số quan trọng}
+\begin{table}[H]\centering
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}X r}
+\toprule
+\textbf{Nội dung} & \textbf{Kết quả} \\
+\midrule
+Số dòng sau khi bỏ đơn hủy & 172.765 \\
+Số đơn sau khi bỏ đơn hủy & 62.897 \\
+Tỉ lệ trễ mức dòng / mức đơn & 57,29\% / 57,31\% \\
+Luật \col{real > scheduled} khớp nhãn & 100\% \\
+Same Day trước 12h / từ 12h & 0\% / 100\% trễ \\
+Số món mỗi đơn trước / từ 10/2017 & 3,00 / 1,02 \\
+Luôn đoán trễ (accuracy test) & 0,5731 \\
+Baseline 1: Shipping Mode & 0,6984 \\
+Baseline 2: thêm quy tắc 12h & 0,7242 \\
+Logistic Regression + tương tác & 0,7242 \\
+Decision Tree (\texttt{max\_depth=6}) & 0,7238 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ======================================================
+\section{Điều học được}
+\begin{itemize}
+  \term{Nhãn phải có nghĩa}{đơn hủy mang nhãn 0 giống đơn giao đúng hạn, nhưng thực ra chưa từng được giao. Bỏ các đơn này làm tỉ lệ trễ tăng từ 54,83\% lên 57,29\%.}
+  \term{Phạm vi mô hình}{sau khi bỏ đơn hủy, mô hình chỉ áp dụng cho đơn không bị hủy.}
+  \term{Chia theo nhóm}{các dòng trong cùng đơn có chung nhãn. Nếu chia theo dòng, một đơn có thể nằm ở cả train và test. Khi mỗi đơn chỉ còn 1 dòng thì không còn vấn đề này.}
+  \term{Mức đánh giá}{ở mức dòng, đơn nhiều món được tính nhiều lần. Ở mức đơn, mỗi đơn có trọng số bằng nhau.}
+  \term{Baseline}{là mốc so sánh đơn giản. Nó phải được học trên train rồi mới áp lên test.}
+  \term{Tương tác giữa các feature}{giờ đặt không có tác dụng rõ khi nhìn tổng thể, nhưng quyết định hoàn toàn nhãn trong Same Day. Logistic Regression cần feature riêng để học điều này, còn Decision Tree tự học được.}
+  \term{Dao động do cách chia}{chỉ đổi \texttt{random\_state}, accuracy đã dao động khoảng 0,7 điểm. Vì vậy không được chọn \texttt{random\_state} cho kết quả đẹp, và không nên kết luận từ chênh lệch nhỏ.}
+  \term{\texttt{test\_size} và \texttt{random\_state}}{20\% cân bằng giữa dữ liệu để học và độ ổn định khi đánh giá. Số 42 không có ý nghĩa riêng, điều quan trọng là cố định nó trước khi xem kết quả.}
+  \term{F1 có thể gây hiểu lầm}{``luôn đoán trễ'' có F1 cao nhất dù accuracy thấp nhất.}
+  \term{Mô hình không vượt baseline cũng là kết quả}{bài cho thấy với feature hiện có, mô hình chỉ học lại quy tắc đơn giản.}
+\end{itemize}
+
+\end{document}
