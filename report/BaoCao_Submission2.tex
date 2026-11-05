@@ -1,0 +1,357 @@
+% Báo cáo Submission 2 - DataCo Supply Chain
+% Biên dịch bằng XeLaTeX (hoặc tectonic):  xelatex BaoCao_Submission2.tex
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\setsansfont{Times New Roman}
+\setmonofont{Times New Roman}
+\usepackage[a4paper,margin=2.2cm]{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{xcolor}
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage[colorlinks=true,linkcolor=accent,urlcolor=accent]{hyperref}
+
+\definecolor{accent}{HTML}{000000}
+\definecolor{notebg}{HTML}{F0F0F0}
+\graphicspath{{../figures_s2/}}
+
+\titleformat{\section}{\Large\bfseries\sffamily\color{accent}}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\large\bfseries\sffamily\color{accent}}{\thesubsection}{0.5em}{}
+\setlist{itemsep=2pt,topsep=4pt}
+\setlength{\parskip}{4pt}
+\setlength{\parindent}{0pt}
+\renewcommand{\arraystretch}{1.25}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[L]{\small\color{gray}DataCo Supply Chain -- Báo cáo Submission 2}
+\fancyfoot[R]{\small\color{gray}Trang \thepage}
+\renewcommand{\headrulewidth}{0pt}
+
+\renewcommand{\figurename}{Hình}
+\renewcommand{\tablename}{Bảng}
+\renewcommand{\contentsname}{Mục lục}
+
+% hình kèm đường dẫn file minh chứng
+\newcommand{\fig}[3]{%
+  \begin{figure}[H]\centering
+  \includegraphics[width=#2\linewidth]{#1}
+  \caption{#3 \textit{(nguồn: \texttt{\detokenize{figures_s2/#1}})}}
+  \end{figure}}
+\newcommand{\note}[1]{\par\noindent\colorbox{notebg}{\parbox{\dimexpr\linewidth-2\fboxsep}{#1}}\par}
+\newcommand{\col}[1]{\textsf{#1}}
+
+\begin{document}
+
+% ================= TRANG BÌA =================
+\hypersetup{pageanchor=false}
+\begin{titlepage}
+\centering
+\vspace*{\fill}
+{\Huge\bfseries DataCo Smart Supply Chain --\\[0.4cm] Dự đoán rủi ro giao hàng trễ\par}
+\vspace*{\fill}
+\end{titlepage}
+\hypersetup{pageanchor=true}
+
+\tableofcontents
+\newpage
+
+% ================= 1 =================
+\section{Tóm tắt kết quả}
+
+Báo cáo này trình bày tiến độ từ Submission 1 đến Submission 2 của bài toán \textbf{binary classification} với target \col{Late\_delivery\_risk}. Trọng tâm là xử lý 5 nhận xét của mentor, đặt baseline và kiểm tra xem mô hình có tốt hơn baseline hay không.
+
+\begin{itemize}
+  \item \textbf{Làm sạch:} bỏ 7.754 dòng đơn hủy, còn 172.765 dòng và 62.897 đơn. Tỉ lệ trễ là 57,29\% ở mức dòng và 57,31\% ở mức đơn.
+  \item \textbf{Phát hiện chính:} giờ đặt hàng chỉ có tác dụng trong \col{Same Day}: đơn đặt trước 12h trễ 0\%, đơn đặt từ 12h trễ 100\%.
+  \item \textbf{Baseline:} trên tập test ở mức đơn, chỉ dùng \col{Shipping Mode} đạt accuracy 0,6984; thêm quy tắc 12h của \col{Same Day} đạt 0,7242.
+  \item \textbf{Mô hình:} không mô hình nào vượt baseline 2. Logistic Regression có feature tương tác đạt 0,7242 và Decision Tree đạt 0,7238.
+\end{itemize}
+
+\note{\textbf{Kết luận:} với các feature hiện có, mô hình chỉ học lại quy tắc \col{Shipping Mode} + 12h, chưa tạo thêm giá trị so với baseline 2. Kết quả chỉ áp dụng cho đơn không bị hủy.}
+
+% ================= 2 =================
+\section{Xử lý nhận xét của mentor}
+
+\begin{table}[H]\centering\small
+\caption{5 nhận xét của mentor và cách xử lý}
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{3.7cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{2.1cm}}
+\toprule
+\textbf{Nhận xét} & \textbf{Việc đã làm và kết quả} & \textbf{Minh chứng} \\
+\midrule
+1. Bỏ các đơn \col{Shipping canceled} & Bỏ 7.754 dòng, tương ứng 2.855 đơn. Không có đơn hủy một phần. Luật \col{real > scheduled} khớp nhãn 100\%. & Notebook mục 4b \\
+2. Không chia ngẫu nhiên theo dòng & Đánh giá ở mức đơn, mỗi đơn 1 dòng. Dùng \texttt{assert} để xác nhận không có \col{Order Id} nào ở cả train và test. & Notebook mục 9b \\
+3. Đặt baseline chỉ dùng \col{Shipping Mode} & Baseline 1 đạt 0,6984 trên test. Ở mức dòng, trên toàn bộ dữ liệu sạch đạt 0,6973, gần mức $\sim$69,5\% của mentor. Thêm baseline 2 với quy tắc 12h. & Notebook mục 9b \\
+4. Tách \col{order date} và làm EDA thời gian & Tách tháng, thứ, giờ. Phân tích ở mức đơn, có 3 biểu đồ mới. & Notebook mục 8b \\
+5. Sửa lý do loại \col{Customer Country} & Tỉ lệ trễ 57,30\% (EE. UU.) và 57,27\% (Puerto Rico). Lý do mới: tỉ lệ trễ gần như bằng nhau giữa 2 nước. & Notebook mục 9 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ================= 3 =================
+\section{Làm sạch dữ liệu}
+
+Đơn hủy mang nhãn \col{Late\_delivery\_risk} = 0, giống đơn giao đúng hoặc trước hạn. Nhưng các đơn này chưa từng được giao, nên nhãn 0 không có nghĩa là ``không trễ''.
+
+Trước khi lọc, bài đã kiểm tra theo \col{Order Id}: mỗi đơn chỉ có 1 nhãn và 1 trạng thái. Vì vậy, lọc đơn hủy sẽ bỏ nguyên cả đơn, và việc gộp mỗi đơn còn 1 dòng không gây mâu thuẫn nhãn.
+
+\begin{table}[H]\centering
+\caption{Dữ liệu trước và sau khi bỏ đơn hủy}
+\begin{tabular}{lrr}
+\toprule
+\textbf{Chỉ số} & \textbf{Trước} & \textbf{Sau} \\
+\midrule
+Số dòng & 180.519 & 172.765 \\
+Số đơn & 65.752 & 62.897 \\
+Tỉ lệ trễ (mức dòng) & 54,83\% & 57,29\% \\
+Luật \col{real > scheduled} khớp nhãn & 97,55\% & 100\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Hệ quả:} mô hình chỉ có giá trị với đơn không bị hủy. Lúc đặt hàng chưa biết đơn nào sẽ bị hủy, nên kết quả không áp dụng được cho những đơn sau đó bị hủy.
+
+Trong tiền xử lý, \col{Order Id} được giữ lại chỉ để chia dữ liệu, không làm feature. Mục 9 của notebook bỏ 34 cột và giữ lại 19 cột.
+
+% ================= 4 =================
+\section{EDA cập nhật trên dữ liệu sạch}
+
+Các số trong mục này tính ở mức dòng, sau khi bỏ đơn hủy.
+
+\begin{table}[H]\centering
+\caption{Tỉ lệ trễ và số ngày giao theo Shipping Mode}
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Shipping Mode} & \textbf{Số dòng} & \textbf{Ngày hẹn} & \textbf{Ngày thực tế} & \textbf{Tỉ lệ trễ} \\
+\midrule
+First Class & 26.513 & 1 & luôn là 2 & 100\% \\
+Second Class & 33.806 & 2 & 2 đến 6 & 79,83\% \\
+Same Day & 9.293 & 0 & 0 hoặc 1 & 47,93\% \\
+Standard Class & 103.153 & 4 & 2 đến 6 & 39,77\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\fig{fig05_late_by_shipping_mode.png}{0.62}{Tỉ lệ trễ theo Shipping Mode sau khi bỏ đơn hủy}
+
+\begin{itemize}
+  \item \col{Shipping Mode} vẫn là yếu tố mạnh nhất. Mỗi mode gắn với đúng 1 giá trị \col{Days for shipment (scheduled)}, nên hai cột này trùng thông tin.
+  \item \col{Type = TRANSFER} còn 57,48\%, không còn thấp hơn các loại khác (56,63\% đến 57,53\%). Khác biệt $\sim$48,5\% trước đây là do nhóm này chứa toàn bộ đơn hủy.
+  \item \col{Market} chỉ từ 56,84\% đến 57,69\%, nên ảnh hưởng yếu. \col{Order Region} từ 51,60\% (Canada, 907 dòng) đến 60,15\% (Central Africa, 1.616 dòng), nhưng hai nhóm ở hai đầu đều ít dòng nên chưa đủ để kết luận.
+\end{itemize}
+
+% ================= 5 =================
+\section{EDA theo thời gian}
+
+Mục này phân tích ở mức đơn, vì các dòng trong cùng đơn có chung giờ đặt và chung nhãn. Tỉ lệ trễ ở mức đơn là 57,31\%.
+
+\subsection{Giờ đặt hàng}
+\fig{fig16_gio_theo_shipping_mode.png}{1.0}{Tỉ lệ trễ theo giờ đặt hàng, tách theo Shipping Mode}
+
+\begin{table}[H]\centering
+\caption{Tỉ lệ trễ trước 12h và từ 12h, ở mức đơn}
+\begin{tabular}{lrr}
+\toprule
+\textbf{Shipping Mode} & \textbf{Trước 12h} & \textbf{Từ 12h} \\
+\midrule
+First Class & 100\% & 100\% \\
+Second Class & 80,01\% & 79,96\% \\
+Same Day & 0\% (1.759 đơn) & 100\% (1.648 đơn) \\
+Standard Class & 39,60\% & 40,10\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Giờ đặt hàng chỉ có tác dụng trong \col{Same Day}, với mốc chốt 12h. Đây là tương tác giữa hai cột. Nhận định trước đây rằng feature giờ không đáng tin được sửa lại như sau: giờ có tác dụng trong \col{Same Day}, còn các mode khác thì không.
+
+\subsection{Tháng và thứ}
+\fig{fig17_thang_va_thu.png}{0.82}{Tỉ lệ trễ theo tháng và thứ trong tuần}
+
+Tỉ lệ trễ gần như phẳng theo tháng (56,11\% đến 57,87\%) và theo thứ (56,90\% đến 57,64\%).
+
+\subsection{Thay đổi từ 10/2017}
+\fig{fig18_thay_doi_tu_10_2017.png}{1.0}{Số đơn, số dòng và số món mỗi đơn theo tháng}
+
+Nhận định trước đây chỉ nói số dòng giảm từ 10/2017. Phân tích mới cho thấy từ 10/2017 số món mỗi đơn gần như chỉ còn 1, còn số đơn mỗi tháng thực ra tăng:
+\begin{itemize}
+  \item Số món trung bình mỗi đơn giảm từ 3,00 xuống 1,02, và 99,23\% đơn chỉ có 1 món.
+  \item Từ tháng 9 sang tháng 10/2017, số dòng giảm từ 4.931 xuống 2.169, còn số đơn tăng từ 1.640 lên 2.019.
+  \item Tỉ lệ trễ gần như không đổi: 57,26\% trước và 57,64\% từ 10/2017.
+\end{itemize}
+
+% ================= 6 =================
+\section{Thiết kế đánh giá}
+
+\begin{itemize}
+  \item \textbf{Mức đánh giá:} mức đơn, mỗi đơn 1 dòng. Nhãn và các feature đã chọn đều là thông tin của cả đơn. Nếu đánh giá ở mức dòng, đơn nhiều món sẽ có trọng số lớn hơn.
+  \item \textbf{Cách chia:} \texttt{train\_test\_split}, 80\% train (50.317 đơn) và 20\% test (12.580 đơn). Vì mỗi đơn chỉ có 1 dòng nên một đơn không thể nằm ở cả hai tập.
+  \item \textbf{\texttt{stratify}:} giữ tỉ lệ trễ của hai tập bằng nhau, đều 57,31\%.
+  \item \textbf{\texttt{random\_state=42}:} cố định trước khi xem kết quả để tái lập được kết quả. Giá trị 42 không có ý nghĩa riêng.
+  \item \textbf{Chỉ số:} accuracy, precision, recall, F1 và ROC-AUC, với lớp dương là ``trễ''.
+\end{itemize}
+
+\textbf{Vì sao chọn \texttt{test\_size=0.2}?} Với accuracy khoảng 0,72, sai số ước tính như sau:
+
+\begin{table}[H]\centering
+\caption{Sai số ước tính của accuracy theo kích thước tập test}
+\begin{tabular}{lrrr}
+\toprule
+\textbf{\texttt{test\_size}} & \textbf{Số đơn test} & \textbf{Số đơn train} & \textbf{Khoảng 95\%} \\
+\midrule
+0,1 & 6.290 & 56.607 & $\pm$1,10 điểm \\
+0,2 & 12.580 & 50.317 & $\pm$0,78 điểm \\
+0,3 & 18.870 & 44.027 & $\pm$0,64 điểm \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Tỉ lệ 20\% giữ được phần lớn dữ liệu để học, trong khi sai số ở mức chấp nhận được và phù hợp với mức dao động đo được ở mục 7.
+
+% ================= 7 =================
+\section{Baseline}
+
+Có 3 mốc so sánh. Mọi quy tắc đều được học trên train rồi mới áp lên test.
+\begin{itemize}
+  \item \textbf{Luôn đoán trễ:} mốc thấp nhất.
+  \item \textbf{Baseline 1:} đoán theo lớp đa số của từng mode trên train. First Class và Second Class đoán trễ; Same Day và Standard Class đoán không trễ.
+  \item \textbf{Baseline 2:} giống baseline 1, riêng Same Day đoán theo giờ đặt. Trên riêng tập train, quy tắc vẫn đúng: trước 12h trễ 0\% (1.384 đơn), từ 12h trễ 100\% (1.323 đơn).
+\end{itemize}
+
+\begin{table}[H]\centering
+\caption{Kết quả baseline trên tập test, mức đơn, \texttt{random\_state=42}}
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Cách làm} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} \\
+\midrule
+Luôn đoán trễ & 0,5731 & 0,5731 & 1,0000 & 0,7287 \\
+Baseline 1 & 0,6984 & 0,8885 & 0,5417 & 0,6731 \\
+Baseline 2 & 0,7242 & 0,8962 & 0,5868 & 0,7092 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\fig{fig19_confusion_baseline.png}{0.72}{Confusion matrix của 2 baseline trên tập test}
+
+\begin{itemize}
+  \item Thêm một quy tắc cho \col{Same Day} làm accuracy tăng khoảng 2,6 điểm.
+  \item \textbf{Luôn đoán trễ} có F1 cao nhất dù accuracy thấp nhất, vì nó bắt được mọi đơn trễ. Vì vậy không nên chỉ nhìn F1.
+  \item Toàn bộ lỗi của baseline 2 nằm ở 2 mode: 2.979 đơn \col{Standard Class} trễ nhưng bị đoán không trễ, và 490 đơn \col{Second Class} không trễ nhưng bị đoán trễ.
+  \item Qua 5 cách chia, baseline 1 dao động từ 0,6921 đến 0,6998, baseline 2 từ 0,7178 đến 0,7250. Lần chia với giá trị 42 nằm ở phía cao của khoảng này, nên báo cáo nêu cả khoảng dao động.
+\end{itemize}
+
+% ================= 8 =================
+\section{Mô hình}
+
+\textbf{Feature:} \col{Shipping Mode}, \col{hour}, \col{dow}, \col{month}, \col{Market}, \col{Order Region}, \col{Type}, \col{Customer Segment}; tổng cộng 42 feature sau one-hot.
+
+\textbf{Không dùng:} 4 cột leakage, \col{Order Id}, nhóm sản phẩm (thông tin của từng món, 63,1\% đơn có nhiều hơn 1 \col{Department Name}) và \col{Days for shipment (scheduled)} (trùng với \col{Shipping Mode}).
+
+Tham số được đặt trước và không chỉnh theo tập test.
+
+\begin{table}[H]\centering\small
+\caption{So sánh mô hình với baseline 2 trên tập test, mức đơn, \texttt{random\_state=42}}
+\begin{tabular}{lrrrrrr}
+\toprule
+\textbf{Cách làm} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} & \textbf{ROC-AUC} & \textbf{Acc. train} \\
+\midrule
+Baseline 2 & 0,7242 & 0,8962 & 0,5868 & 0,7092 & -- & -- \\
+Logistic Regression & 0,7177 & 0,8934 & 0,5763 & 0,7006 & 0,7435 & 0,7163 \\
+Logistic Regression + tương tác & 0,7242 & 0,8962 & 0,5868 & 0,7092 & 0,7778 & 0,7222 \\
+Decision Tree (\texttt{max\_depth=6}) & 0,7238 & 0,8931 & 0,5885 & 0,7095 & 0,7777 & 0,7227 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]\centering\small
+\caption{Accuracy trên 5 cách chia}
+\begin{tabular}{lrrrrrr}
+\toprule
+\textbf{Cách làm} & \textbf{0} & \textbf{1} & \textbf{2} & \textbf{3} & \textbf{42} & \textbf{Trung bình} \\
+\midrule
+Baseline 2 & 0,7178 & 0,7250 & 0,7240 & 0,7210 & 0,7242 & 0,7224 \\
+Logistic Regression & 0,7115 & 0,7196 & 0,7140 & 0,7119 & 0,7177 & 0,7149 \\
+Logistic Regression + tương tác & 0,7178 & 0,7250 & 0,7240 & 0,7210 & 0,7242 & 0,7224 \\
+Decision Tree (\texttt{max\_depth=6}) & 0,7167 & 0,7251 & 0,7229 & 0,7199 & 0,7238 & 0,7217 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\fig{fig20_confusion_mo_hinh.png}{0.42}{Confusion matrix của Logistic Regression + tương tác, giống hệt baseline 2}
+
+\begin{itemize}
+  \item Logistic Regression không tự học được tương tác ``Same Day và từ 12h'', nên thấp hơn baseline 2. Thêm feature tương tác thì accuracy bằng baseline 2 ở cả 5 cách chia.
+  \item Decision Tree tự học được tương tác đó mà không cần tạo feature riêng.
+  \item Decision Tree gần như chỉ dùng \col{Shipping Mode} và \col{hour}: \col{Standard Class} 0,6463, \col{hour} 0,1935, \col{Same Day} 0,1051, \col{Second Class} 0,0491. Các feature khác rất nhỏ.
+  \item Accuracy train và test gần nhau nên không thấy overfit. Accuracy cao nhất là 0,7242, thấp hơn nhiều so với mức bất thường, nên chưa có dấu hiệu leakage.
+\end{itemize}
+
+\note{Chênh lệch giữa baseline 2 và hai mô hình tốt nhất nằm trong mức dao động do cách chia, nên không kết luận được mô hình nào tốt hơn. Mô hình có ROC-AUC 0,778, nhưng baseline 2 không có chỉ số này để so sánh.}
+
+% ================= 9 =================
+\section{Đã làm và chưa làm}
+
+\begin{table}[H]\centering
+\caption{Tiến độ Submission 2}
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Đã làm} & \textbf{Chưa làm} \\
+\midrule
+Xử lý 5 nhận xét của mentor & Chia train/test theo thời gian \\
+Làm sạch dữ liệu và chạy lại EDA & Thử nhiều mô hình và tinh chỉnh tham số \\
+EDA thời gian ở mức đơn & Tìm feature mới cho Second Class và Standard Class \\
+Chia dữ liệu theo đơn, đặt 3 mốc so sánh & Viết blog và làm video \\
+Train 3 mô hình đơn giản và so trên 5 cách chia & \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ================= 10 =================
+\section{Hạn chế và hướng tiếp theo}
+
+\subsection*{Hạn chế}
+\begin{itemize}
+  \item \textbf{Phạm vi:} kết quả chỉ áp dụng cho đơn không bị hủy.
+  \item \textbf{Dữ liệu có dấu hiệu mô phỏng:} First Class luôn giao sau 2 ngày, Same Day có mốc chốt đúng 12h, còn Second Class và Standard Class có số ngày thực tế phân bố gần đều từ 2 đến 6. Đây là suy luận từ số liệu, không phải khẳng định về logistics ngoài đời.
+  \item \textbf{Cấu trúc đơn đổi từ 10/2017:} nếu chia theo thời gian, tập test sẽ nằm trong giai đoạn có cấu trúc đơn khác.
+  \item \textbf{Quy tắc 12h được phát hiện khi xem toàn bộ dữ liệu}, kể cả phần sau này là tập test. Quy tắc đã được kiểm tra lại trên riêng tập train và vẫn đúng.
+  \item \textbf{Baseline đã mạnh:} phần lỗi còn lại nằm ở Second Class và Standard Class, nơi các feature hiện có chưa phân biệt được nhãn.
+  \item \textbf{Chưa kiểm tra chia theo thời gian}, nên chưa biết kết quả có giữ được khi dự đoán các đơn tương lai hay không.
+\end{itemize}
+
+\subsection*{Hướng tiếp theo}
+\begin{enumerate}
+  \item Chia theo thời gian để kiểm tra độ bền.
+  \item Tìm feature mới cho Second Class và Standard Class.
+  \item Chỉ thử mô hình phức tạp hơn nếu có feature mới mang thêm thông tin.
+\end{enumerate}
+
+% ================= Phụ lục =================
+\section*{Phụ lục: Danh sách file minh chứng}
+\addcontentsline{toc}{section}{Phụ lục: Danh sách file minh chứng}
+
+\begin{table}[H]\centering\small
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{6.4cm}>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{File} & \textbf{Nội dung} \\
+\midrule
+\texttt{\detokenize{DataCo_Submission2.ipynb}} & Notebook đã chạy kèm output \\
+\texttt{\detokenize{DataCo_Submission2.html}} & Bản HTML của notebook \\
+\texttt{\detokenize{figures_s2/}} & 20 biểu đồ của Submission 2 \\
+\texttt{\detokenize{results_s2/cac_cot_bi_bo.csv}} & Danh sách cột bị bỏ kèm lý do \\
+\texttt{\detokenize{results_s2/ket_qua_baseline.csv}} & Kết quả 3 mốc so sánh \\
+\texttt{\detokenize{results_s2/ket_qua_mo_hinh.csv}} & Kết quả baseline và mô hình \\
+\texttt{\detokenize{results_s2/so_sanh_5_cach_chia.csv}} & Accuracy trên 5 cách chia \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\end{document}
